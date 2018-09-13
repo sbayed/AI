@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def sigmoid(Z):
     """
@@ -75,39 +76,6 @@ def sigmoid_backward(dA, cache):
     assert (dZ.shape == Z.shape)
     
     return dZ
-def initialize_parameters(n_x, n_h, n_y):
-    """
-    Argument:
-    n_x -- size of the input layer
-    n_h -- size of the hidden layer
-    n_y -- size of the output layer
-    
-    Returns:
-    parameters -- python dictionary containing your parameters:
-                    W1 -- weight matrix of shape (n_h, n_x)
-                    b1 -- bias vector of shape (n_h, 1)
-                    W2 -- weight matrix of shape (n_y, n_h)
-                    b2 -- bias vector of shape (n_y, 1)
-    """
-    
-    np.random.seed(1)
-    
-    W1 = np.random.randn(n_h, n_x)*0.01
-    b1 = np.zeros((n_h, 1))
-    W2 = np.random.randn(n_y, n_h)*0.01
-    b2 = np.zeros((n_y, 1))
-    
-    assert(W1.shape == (n_h, n_x))
-    assert(b1.shape == (n_h, 1))
-    assert(W2.shape == (n_y, n_h))
-    assert(b2.shape == (n_y, 1))
-    
-    parameters = {"W1": W1,
-                  "b1": b1,
-                  "W2": W2,
-                  "b2": b2}
-    
-    return parameters     
 def initialize_parameters_deep(layer_dims):
     """
     Arguments:
@@ -379,5 +347,64 @@ def predict(X, y, parameters):
     print("Accuracy: "  + str(np.sum((p == y)/m)))
         
     return p
+def L_layer_model(X, Y, layers_dims, learning_rate = 0.0075, num_iterations = 3000, print_cost=False):#lr was 0.009
+    """
+    Implements a L-layer neural network: [LINEAR->RELU]*(L-1)->LINEAR->SIGMOID.
+    
+    Arguments:
+    X -- data, numpy array of shape (number of examples, num_px * num_px * 3)
+    Y -- true "label" vector (containing 0 if cat, 1 if non-cat), of shape (1, number of examples)
+    layers_dims -- list containing the input size and each layer size, of length (number of layers + 1).
+    learning_rate -- learning rate of the gradient descent update rule
+    num_iterations -- number of iterations of the optimization loop
+    print_cost -- if True, it prints the cost every 100 steps
+    
+    Returns:
+    parameters -- parameters learnt by the model. They can then be used to predict.
+    """
 
+    np.random.seed(1)
+    costs = []                         # keep track of cost
+    
+    # Parameters initialization. (≈ 1 line of code)
+    ### START CODE HERE ###
+    parameters = initialize_parameters_deep(layers_dims)
+    ### END CODE HERE ###
+    
+    # Loop (gradient descent)
+    for i in range(0, num_iterations):
 
+        # Forward propagation: [LINEAR -> RELU]*(L-1) -> LINEAR -> SIGMOID.
+        ### START CODE HERE ### (≈ 1 line of code)
+        AL, caches = L_model_forward(X, parameters)
+        ### END CODE HERE ###
+        
+        # Compute cost.
+        ### START CODE HERE ### (≈ 1 line of code)
+        cost = compute_cost(AL, Y)
+        ### END CODE HERE ###
+    
+        # Backward propagation.
+        ### START CODE HERE ### (≈ 1 line of code)
+        grads = L_model_backward(AL, Y, caches)
+        ### END CODE HERE ###
+ 
+        # Update parameters.
+        ### START CODE HERE ### (≈ 1 line of code)
+        parameters = update_parameters(parameters, grads, learning_rate)
+        ### END CODE HERE ###
+                
+        # Print the cost every 100 training example
+        if print_cost and i % 100 == 0:
+            print ("Cost after iteration %i: %f" %(i, cost))
+        if print_cost and i % 100 == 0:
+            costs.append(cost)
+            
+    # plot the cost
+    plt.plot(np.squeeze(costs))
+    plt.ylabel('cost')
+    plt.xlabel('iterations (per tens)')
+    plt.title("Learning rate =" + str(learning_rate))
+    plt.show()
+    
+    return parameters
