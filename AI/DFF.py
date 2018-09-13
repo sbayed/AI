@@ -1,150 +1,123 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def sigmoid(Z):
-    """
-    Implements the sigmoid activation in numpy
-    
-    Arguments:
-    Z -- numpy array of any shape
-    
-    Returns:
-    A -- output of sigmoid(z), same shape as Z
-    cache -- returns Z as well, useful during backpropagation
-    """
-    
-    A = 1/(1+np.exp(-Z))
-    cache = Z
-    
-    return A, cache
-def relu(Z):
-    """
-    Implement the RELU function.
 
-    Arguments:
-    Z -- Output of the linear layer, of any shape
-
-    Returns:
-    A -- Post-activation parameter, of the same shape as Z
-    cache -- a python dictionary containing "A" ; stored for computing the backward pass efficiently
-    """
-    
-    A = np.maximum(0,Z)
-    
-    assert(A.shape == Z.shape)
-    
-    cache = Z 
-    return A, cache
-def relu_backward(dA, cache):
-    """
-    Implement the backward propagation for a single RELU unit.
-
-    Arguments:
-    dA -- post-activation gradient, of any shape
-    cache -- 'Z' where we store for computing backward propagation efficiently
-
-    Returns:
-    dZ -- Gradient of the cost with respect to Z
-    """
-    
-    Z = cache
-    dZ = np.array(dA, copy=True) # just converting dz to a correct object.
-    
-    # When z <= 0, you should set dz to 0 as well. 
-    dZ[Z <= 0] = 0
-    
-    assert (dZ.shape == Z.shape)
-    
-    return dZ
-def sigmoid_backward(dA, cache):
-    """
-    Implement the backward propagation for a single SIGMOID unit.
-
-    Arguments:
-    dA -- post-activation gradient, of any shape
-    cache -- 'Z' where we store for computing backward propagation efficiently
-
-    Returns:
-    dZ -- Gradient of the cost with respect to Z
-    """
-    
-    Z = cache
-    
-    s = 1/(1+np.exp(-Z))
-    dZ = dA * s * (1-s)
-    
-    assert (dZ.shape == Z.shape)
-    
-    return dZ
-def initialize_parameters_deep(layer_dims):
+def initialize_parameters(layer_dims, activations):
     """
     Arguments:
-    layer_dims -- python array (list) containing the dimensions of each layer in our network
+    layer_dims -- list containing the dimensions of each layer (includes layer 0)
+    activations -- list containing the activation functions of each layer
     
     Returns:
-    parameters -- python dictionary containing your parameters "W1", "b1", ..., "WL", "bL":
-                    Wl -- weight matrix of shape (layer_dims[l], layer_dims[l-1])
-                    bl -- bias vector of shape (layer_dims[l], 1)
+    parameters -- dictionary containing parameters
+
     """
     
     np.random.seed(1)
     parameters = {}
-    L = len(layer_dims)            # number of layers in the network
+    L = len(layer_dims)
 
     for l in range(1, L):
-        parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) / np.sqrt(layer_dims[l-1]) #*0.01
+        parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) / np.sqrt(layer_dims[l-1])
         parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))
+        parameters['g' + str(l)] = activations[l]
         
         assert(parameters['W' + str(l)].shape == (layer_dims[l], layer_dims[l-1]))
         assert(parameters['b' + str(l)].shape == (layer_dims[l], 1))
 
         
     return parameters
-def linear_forward(A, W, b):
+def linear_forward(A_prev, W, b):
     """
     Implement the linear part of a layer's forward propagation.
 
     Arguments:
-    A -- activations from previous layer (or input data): (size of previous layer, number of examples)
+    A_prev -- activations from previous layer (or input data)
     W -- weights matrix: numpy array of shape (size of current layer, size of previous layer)
     b -- bias vector, numpy array of shape (size of the current layer, 1)
 
     Returns:
-    Z -- the input of the activation function, also called pre-activation parameter 
-    cache -- a python dictionary containing "A", "W" and "b" ; stored for computing the backward pass efficiently
+    Z -- pre-activation parameter
+    cache -- dictionary containing "A_prev", "W" and "b" ; stored for computing the backward pass efficiently
     """
     
-    Z = W.dot(A) + b
+    Z = W.dot(A_prev) + b
     
-    assert(Z.shape == (W.shape[0], A.shape[1]))
-    cache = (A, W, b)
+    assert(Z.shape == (W.shape[0], A_prev.shape[1]))
+    cache = (A_prev, W, b)
     
     return Z, cache
-def linear_activation_forward(A_prev, W, b, activation):
+def sigmoid(x):
     """
-    Implement the forward propagation for the LINEAR->ACTIVATION layer
+    Implements the sigmoid function
 
     Arguments:
-    A_prev -- activations from previous layer (or input data): (size of previous layer, number of examples)
-    W -- weights matrix: numpy array of shape (size of current layer, size of previous layer)
-    b -- bias vector, numpy array of shape (size of the current layer, 1)
-    activation -- the activation to be used in this layer, stored as a text string: "sigmoid" or "relu"
+    x -- numpy array of any shape
 
     Returns:
-    A -- the output of the activation function, also called the post-activation value 
-    cache -- a python dictionary containing "linear_cache" and "activation_cache";
+    y -- output of sigmoid(x)
+
+    """
+
+    y = 1 / (1 + np.exp(-x))
+
+    assert (y.shape == x.shape)
+
+    return y
+def relu(x):
+    """
+    Implement the RELU function.
+
+    Arguments:
+    x -- numpy array of any shape
+
+    Returns:
+    y -- output of ReLu(x)
+    """
+
+    y = np.maximum(0, x)
+
+    assert (y.shape == x.shape)
+
+    return y
+def activation_forward(Z, activation):
+    """
+    Implement the activation part of a layer's forward propagation.
+
+    Arguments:
+    Z -- pre-activation from linear forward
+    activation -- activation function
+
+    Returns:
+    A -- post-activation
+    cache -- dictionary containing "Z" and "g" (activation function at current layer)
+    """
+    if activation == "sigmoid":
+        A = sigmoid(Z)
+    elif activation == "relu":
+        A = relu(Z)
+
+    cache = (Z, activation)
+    return A, cache
+def linear_activation_forward(A_prev, W, b, activation):
+    """
+    Implement the forward propagation for the LINEAR->ACTIVATION block
+
+    Arguments:
+    A_prev -- activations from previous layer (or input data)
+    W -- weights matrix: numpy array of shape (size of current layer, size of previous layer)
+    b -- bias vector, numpy array of shape (size of the current layer, 1)
+    activation -- the activation to be used in this layer, stored as a text string
+
+    Returns:
+    A -- post-activation value
+    cache -- dictionary containing "linear_cache" and "activation_cache";
              stored for computing the backward pass efficiently
     """
-    
-    if activation == "sigmoid":
-        # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-        Z, linear_cache = linear_forward(A_prev, W, b)
-        A, activation_cache = sigmoid(Z)
-    
-    elif activation == "relu":
-        # Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
-        Z, linear_cache = linear_forward(A_prev, W, b)
-        A, activation_cache = relu(Z)
+
+    Z, linear_cache = linear_forward(A_prev, W, b)
+    A, activation_cache = activation_forward(Z, activation)
+
     
     assert (A.shape == (W.shape[0], A_prev.shape[1]))
     cache = (linear_cache, activation_cache)
@@ -167,16 +140,16 @@ def L_model_forward(X, parameters):
 
     caches = []
     A = X
-    L = len(parameters) // 2                  # number of layers in the neural network
+    L = len(parameters) // 3                  # number of layers in the neural network
     
     # Implement [LINEAR -> RELU]*(L-1). Add "cache" to the "caches" list.
     for l in range(1, L):
         A_prev = A 
-        A, cache = linear_activation_forward(A_prev, parameters['W' + str(l)], parameters['b' + str(l)], activation = "relu")
+        A, cache = linear_activation_forward(A_prev, parameters['W' + str(l)], parameters['b' + str(l)], parameters['g' + str(l)])
         caches.append(cache)
     
     # Implement LINEAR -> SIGMOID. Add "cache" to the "caches" list.
-    AL, cache = linear_activation_forward(A, parameters['W' + str(L)], parameters['b' + str(L)], activation = "sigmoid")
+    AL, cache = linear_activation_forward(A, parameters['W' + str(L)], parameters['b' + str(L)], parameters['g' + str(L)])
     caches.append(cache)
     
     assert(AL.shape == (1,X.shape[1]))
@@ -204,6 +177,47 @@ def compute_cost(AL, Y):
     assert(cost.shape == ())
     
     return cost
+def relu_backward(dA, cache):
+    """
+    Implement the backward propagation for a single RELU unit.
+
+    Arguments:
+    dA -- post-activation gradient, of any shape
+    cache -- 'Z' where we store for computing backward propagation efficiently
+
+    Returns:
+    dZ -- Gradient of the cost with respect to Z
+    """
+
+    Z = cache
+    dZ = np.array(dA, copy=True)  # just converting dz to a correct object.
+
+    # When z <= 0, you should set dz to 0 as well.
+    dZ[Z <= 0] = 0
+
+    assert (dZ.shape == Z.shape)
+
+    return dZ
+def sigmoid_backward(dA, cache):
+    """
+    Implement the backward propagation for a single SIGMOID unit.
+
+    Arguments:
+    dA -- post-activation gradient, of any shape
+    cache -- 'Z' where we store for computing backward propagation efficiently
+
+    Returns:
+    dZ -- Gradient of the cost with respect to Z
+    """
+
+    Z = cache
+
+    s = 1 / (1 + np.exp(-Z))
+    dZ = dA * s * (1 - s)
+
+    assert (dZ.shape == Z.shape)
+
+    return dZ
 def linear_backward(dZ, cache):
     """
     Implement the linear portion of backward propagation for a single layer (layer l)
@@ -306,7 +320,7 @@ def update_parameters(parameters, grads, learning_rate):
                   parameters["b" + str(l)] = ...
     """
     
-    L = len(parameters) // 2 # number of layers in the neural network
+    L = len(parameters) // 3 # number of layers in the neural network
 
     # Update rule for each parameter. Use a for loop.
     for l in range(L):
@@ -347,7 +361,7 @@ def predict(X, y, parameters):
     print("Accuracy: "  + str(np.sum((p == y)/m)))
         
     return p
-def L_layer_model(X, Y, layers_dims, learning_rate = 0.0075, num_iterations = 3000, print_cost=False):#lr was 0.009
+def L_layer_model(X, Y, layers_dims, activations, learning_rate = 0.0075, num_iterations = 3000, print_cost=False):
     """
     Implements a L-layer neural network: [LINEAR->RELU]*(L-1)->LINEAR->SIGMOID.
     
@@ -368,7 +382,7 @@ def L_layer_model(X, Y, layers_dims, learning_rate = 0.0075, num_iterations = 30
     
     # Parameters initialization. (≈ 1 line of code)
     ### START CODE HERE ###
-    parameters = initialize_parameters_deep(layers_dims)
+    parameters = initialize_parameters(layers_dims, activations)
     ### END CODE HERE ###
     
     # Loop (gradient descent)
