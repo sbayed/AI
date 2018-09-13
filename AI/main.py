@@ -15,10 +15,11 @@ X_test = X_test_flatten/255.
 
 layers_dims = [X_train.shape[0], 20, 7, 5, 1]
 activations = ['none','relu','relu','relu','sigmoid']
+cost = 'cross-entropy'
 
 # Esimation
 
-parameters = L_layer_model(X_train, Y_train, layers_dims, activations, num_iterations = 2500, print_cost = True)
+parameters = L_layer_model(X_train, Y_train, layers_dims, activations, cost, num_iterations = 2500, print_cost = True)
 
 
 # Validation
