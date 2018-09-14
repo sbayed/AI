@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import h5py
 import numpy as np
+import scipy.io
 
 
 def load_data():
@@ -36,3 +37,12 @@ def print_mislabeled_images(classes, X, y, p):
         plt.imshow(X[:,index].reshape(64,64,3), interpolation='nearest')
         plt.axis('off')
         plt.title("Prediction: " + classes[int(p[0,index])].decode("utf-8") + " \n Class: " + classes[y[0,index]].decode("utf-8"))
+def load_2D_dataset():
+    data = scipy.io.loadmat('datasets/data.mat')
+    train_X = data['X'].T
+    train_Y = data['y'].T
+    test_X = data['Xval'].T
+    test_Y = data['yval'].T
+
+
+    return train_X, train_Y, test_X, test_Y
