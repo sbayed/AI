@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from utilities import *
 
 
-def initialize_parameters(layer_dims, activations):
+def initialize_parameters(layers_dims, activations):
     """
     Arguments:
-    layer_dims -- list containing the dimensions of each layer (includes layer 0)
+    layers_dims -- list containing the dimensions of each layer (includes layer 0)
     activations -- list containing the activation functions of each layer
     
     Returns:
@@ -13,17 +14,17 @@ def initialize_parameters(layer_dims, activations):
 
     """
     
-    np.random.seed(1)
+    np.random.seed(3)
     parameters = {}
-    L = len(layer_dims)
+    L = len(layers_dims)
 
     for l in range(1, L):
-        parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) / np.sqrt(layer_dims[l-1])
-        parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))
+        parameters['W' + str(l)] = np.random.randn(layers_dims[l], layers_dims[l-1]) / np.sqrt(layers_dims[l-1])
+        parameters['b' + str(l)] = np.zeros((layers_dims[l], 1))
         parameters['g' + str(l)] = activations[l]
         
-        assert(parameters['W' + str(l)].shape == (layer_dims[l], layer_dims[l-1]))
-        assert(parameters['b' + str(l)].shape == (layer_dims[l], 1))
+        assert(parameters['W' + str(l)].shape == (layers_dims[l], layers_dims[l-1]))
+        assert(parameters['b' + str(l)].shape == (layers_dims[l], 1))
 
         
     return parameters
@@ -151,7 +152,28 @@ def L_model_forward(X, parameters):
     assert(AL.shape == (1,X.shape[1]))
             
     return AL, caches
-def compute_cost(AL, Y, cost):
+def L2_regularization_cost(parameters, lambd):
+    """
+    Computes L2 regularization cost
+
+    Arguments:
+    parameters -- dictionary containing parameters
+    lambd -- regularization parameter
+
+
+    Returns:
+    J_L2 -- cost value
+    """
+    L = len(parameters) // 3  # number of layers in the neural network
+    J_L2 = 0
+
+    for l in range(L):
+        J_L2 = J_L2 + np.sum(np.square(parameters["W" + str(l + 1)]))
+
+    J_L2 = J_L2*lambd/2
+
+    return J_L2
+def compute_cost(AL, Y, cost, parameters, lambd):
     """
     Implement the cost function
 
@@ -164,11 +186,11 @@ def compute_cost(AL, Y, cost):
     Returns:
     J -- cost value
     """
-    
+
     m = Y.shape[1]
 
     if cost == 'cross-entropy':
-        J = (1./m) * (-np.dot(Y,np.log(AL).T) - np.dot(1-Y, np.log(1-AL).T))
+        J = (1./m) * (-np.dot(Y,np.log(AL).T) - np.dot(1-Y, np.log(1-AL).T)) + (1./m) * L2_regularization_cost(parameters, lambd)
 
     
     J = np.squeeze(J)
@@ -238,7 +260,7 @@ def activation_backward(dA, Z, activation):
 
 
     return dZ
-def linear_backward(dZ, A_prev, W, b):
+def linear_backward(dZ, A_prev, W, b, lambd):
     """
     Implement the linear part of a layer's forward propagation.
 
@@ -256,7 +278,7 @@ def linear_backward(dZ, A_prev, W, b):
     m = A_prev.shape[1]
 
     dA_prev = np.dot(W.T,dZ)
-    dW = 1/m * np.dot(dZ,A_prev.T)
+    dW = 1/m * np.dot(dZ,A_prev.T) + lambd/m * W
     db = 1/m * np.sum(dZ, axis = 1, keepdims = True)
 
     assert (dA_prev.shape == A_prev.shape)
@@ -264,7 +286,7 @@ def linear_backward(dZ, A_prev, W, b):
     assert (db.shape == b.shape)
 
     return dA_prev, dW, db
-def linear_activation_backward(dA, Z, activation, A_prev, W, b):
+def linear_activation_backward(dA, Z, activation, A_prev, W, b, lambd):
     """
     Implement the backward propagation for the LINEAR->ACTIVATION layer.
 
@@ -282,10 +304,10 @@ def linear_activation_backward(dA, Z, activation, A_prev, W, b):
     db -- Gradient of the cost with respect to b (current layer l), same shape as b
     """
     dZ = activation_backward(dA, Z, activation)
-    dA_prev, dW, db = linear_backward(dZ, A_prev, W, b,)
+    dA_prev, dW, db = linear_backward(dZ, A_prev, W, b, lambd)
 
     return dA_prev, dW, db
-def L_model_backward(dAL, caches):
+def L_model_backward(dAL, caches, lambd):
     """
     Implement the backward propagation for the [LINEAR->ACTIVATION] * (L) group
 
@@ -308,7 +330,7 @@ def L_model_backward(dAL, caches):
         current_linear_cache, current_activation_cache = current_cache
         A_prev, W, b = current_linear_cache
         Z, activation = current_activation_cache
-        dA_prev, dW, db = linear_activation_backward(dA_prev, Z, activation, A_prev, W, b)
+        dA_prev, dW, db = linear_activation_backward(dA_prev, Z, activation, A_prev, W, b, lambd)
         grads["dA" + str(l)] = dA_prev
         grads["dW" + str(l + 1)] = dW
         grads["db" + str(l + 1)] = db
@@ -336,7 +358,7 @@ def update_parameters(parameters, grads, learning_rate):
         parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate * grads["db" + str(l+1)]
         
     return parameters
-def L_layer_model(X, Y, layers_dims, activations, cost, learning_rate = 0.0075, num_iterations = 3000, print_cost = False):
+def L_layer_model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0.0075, num_iterations = 3000, print_cost = False):
     """
     Implements a L-layer neural network
 
@@ -365,13 +387,13 @@ def L_layer_model(X, Y, layers_dims, activations, cost, learning_rate = 0.0075, 
         AL, caches = L_model_forward(X, parameters)
 
         # Compute cost
-        J = compute_cost(AL, Y, cost)
+        J = compute_cost(AL, Y, cost, parameters, lambd)
 
         # Backward propagation initialization
         dAL = initialize_backpropagation(AL, Y, cost)
 
         # Backward propagation
-        grads = L_model_backward(dAL, caches)
+        grads = L_model_backward(dAL, caches, lambd)
 
         # Update parameters.
         parameters = update_parameters(parameters, grads, learning_rate)
@@ -388,6 +410,7 @@ def L_layer_model(X, Y, layers_dims, activations, cost, learning_rate = 0.0075, 
     plt.xlabel('iterations (per hundreds)')
     plt.title("Learning rate =" + str(learning_rate))
     plt.show()
+
 
     return parameters
 def predict(X, y, parameters):
@@ -420,6 +443,7 @@ def predict(X, y, parameters):
     print("Accuracy: "  + str(np.sum((p == y)/m)))
         
     return p
+
 
 
 
