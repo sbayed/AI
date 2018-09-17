@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from utilities import *
 
 
-def initialize_parameters(layer_dims, activations):
+def initialize_parameters(layers_dims, activations):
     """
     Arguments:
-    layer_dims -- list containing the dimensions of each layer (includes layer 0)
+    layers_dims -- list containing the dimensions of each layer (includes layer 0)
     activations -- list containing the activation functions of each layer
     
     Returns:
@@ -15,15 +16,15 @@ def initialize_parameters(layer_dims, activations):
     
     np.random.seed(3)
     parameters = {}
-    L = len(layer_dims)
+    L = len(layers_dims)
 
     for l in range(1, L):
-        parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) / np.sqrt(layer_dims[l-1])
-        parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))
+        parameters['W' + str(l)] = np.random.randn(layers_dims[l], layers_dims[l-1]) / np.sqrt(layers_dims[l-1])
+        parameters['b' + str(l)] = np.zeros((layers_dims[l], 1))
         parameters['g' + str(l)] = activations[l]
         
-        assert(parameters['W' + str(l)].shape == (layer_dims[l], layer_dims[l-1]))
-        assert(parameters['b' + str(l)].shape == (layer_dims[l], 1))
+        assert(parameters['W' + str(l)].shape == (layers_dims[l], layers_dims[l-1]))
+        assert(parameters['b' + str(l)].shape == (layers_dims[l], 1))
 
         
     return parameters

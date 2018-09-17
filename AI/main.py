@@ -17,9 +17,9 @@ activations = ['none','relu','relu','relu','sigmoid']
 cost = 'cross-entropy'
 lambd = 0
 
-# Esimation
+# Estimation
 parameters = L_layer_model(X_train, Y_train, layers_dims, activations, cost, lambd, num_iterations = 2500, print_cost = True)
-
+""
 # Validation
 ACC_train = pred_train = predict(X_train, Y_train, parameters)
 ACC_test = pred_test = predict(X_test, Y_test, parameters)
