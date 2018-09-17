@@ -1,6 +1,6 @@
 import numpy as np
 import os
-os.chdir('/Users/sofianbayed/Desktop/Apoolo Development/Finance/AI/AI')
+#os.chdir('/Users/sofianbayed/Desktop/Apoolo Development/Finance/AI/AI')
 from DFF import *
 from utilities import *
 
