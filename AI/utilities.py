@@ -46,9 +46,9 @@ def load_2D_dataset():
 
 
     return train_X, train_Y, test_X, test_Y
-def dictionary_to_vector(parameters):
+def parameters_to_vector(parameters):
     """
-    Roll all our parameters dictionary into a single vector satisfying our specific required shape.
+    Roll all parameters dictionary into a single vector satisfying specific required shape for gradient checking.
     """
     layers_dims = []
     activations = ['none']
@@ -78,7 +78,7 @@ def dictionary_to_vector(parameters):
 
 
     return theta, cache
-def vector_to_dictionary(theta, layers_dims, activations):
+def vector_to_parameters(theta, layers_dims, activations):
     """
     Unroll all our parameters dictionary from a single vector satisfying our specific required shape.
     """
@@ -103,3 +103,79 @@ def vector_to_dictionary(theta, layers_dims, activations):
 
 
     return parameters
+def gradients_to_vector(gradients):
+    """
+    Roll all gradients dictionary into a single vector satisfying specific required shape for gradient checking.
+    """
+    L = len(gradients) // 3
+    count = 0
+    for l in range(L):
+        dW = gradients["dW" + str(l+1)]
+        # flatten gradient
+        new_vector = np.reshape(dW, (-1, 1))
+
+        if count == 0:
+            theta = new_vector
+        else:
+            theta = np.concatenate((theta, new_vector), axis=0)
+        count = count + 1
+        count = count + 1
+
+        db = gradients["db" + str(l+1)]
+        # flatten gradient
+        new_vector = np.reshape(db, (-1, 1))
+        theta = np.concatenate((theta, new_vector), axis=0)
+
+    return theta
+def gradient_check(parameters, gradients, X, Y, cost, lambd, epsilon=1e-7):
+    """
+    Checks if backward propagation computes correctly the gradient of the cost output by forward propagation
+
+    Arguments:
+    parameters -- python dictionary containing the weights
+    grad -- output of backward propagation, contains gradients of the cost with respect to the weights.
+    X -- input matrix
+    Y -- output matrix
+    epsilon -- shift to the input to compute approximated gradient
+
+    Returns:
+    difference -- difference between the approximated gradient and the backward propagation gradient
+    """
+
+    # Set-up variables
+    parameters_values, cache = parameters_to_vector(parameters)
+    layers_dims, activations = cache
+    grads_values = gradients_to_vector(gradients)
+    num_parameters = parameters_values.shape[0]
+    J_plus = np.zeros((num_parameters, 1))
+    J_minus = np.zeros((num_parameters, 1))
+    gradapprox = np.zeros((num_parameters, 1))
+
+    # Compute gradapprox
+    for i in range(num_parameters):
+        thetaplus = np.copy(parameters_values)
+        thetaplus[i][0] = thetaplus[i][0] + epsilon
+        AL, _ = L_model_forward(X, vector_to_parameters(thetaplus, layers_dims, activations))
+        J_plus[i] = compute_cost(AL, Y, cost, vector_to_parameters(thetaplus, layers_dims, activations), lambd)
+
+        thetaminus = np.copy(parameters_values)
+        thetaminus[i][0] = thetaminus[i][0] - epsilon
+        AL, _ = L_model_forward(X, vector_to_parameters(thetaminus, layers_dims, activations))
+        J_minus[i] = compute_cost(AL, Y, cost, vector_to_parameters(thetaminus, layers_dims, activations), lambd)
+
+        # Compute gradapprox[i]
+        gradapprox[i] = (J_plus[i] - J_minus[i])/(2*epsilon)
+
+    # Compare gradapprox to backward propagation gradients by computing difference.
+    numerator = np.linalg.norm(grads_values - gradapprox)
+    denominator = np.linalg.norm(grads_values) + np.linalg.norm(gradapprox) 
+    difference = numerator/denominator
+
+    if difference > 2e-7:
+        print(
+            "\033[93m" + "There is a mistake in the backward propagation! difference = " + str(difference) + "\033[0m")
+    else:
+        print(
+            "\033[92m" + "Your backward propagation works perfectly fine! difference = " + str(difference) + "\033[0m")
+
+    return difference

@@ -412,6 +412,7 @@ def L_layer_model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0
     plt.show()
 
 
+
     return parameters
 def predict(X, y, parameters):
     """
@@ -443,6 +444,8 @@ def predict(X, y, parameters):
     print("Accuracy: "  + str(np.sum((p == y)/m)))
         
     return p
+
+
 
 
 
