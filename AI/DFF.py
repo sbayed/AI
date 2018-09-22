@@ -28,6 +28,31 @@ def initialize_parameters(layers_dims, activations):
 
         
     return parameters
+def initialize_velocity(parameters):
+    """
+    Initializes the velocity as a python dictionary with:
+                - keys: "dW1", "db1", ..., "dWL", "dbL" 
+                - values: numpy arrays of zeros of the same shape as the corresponding gradients/parameters.
+    Arguments:
+    parameters -- python dictionary containing your parameters.
+                    parameters['W' + str(l)] = Wl
+                    parameters['b' + str(l)] = bl
+    
+    Returns:
+    v -- python dictionary containing the current velocity.
+                    v['dW' + str(l)] = velocity of dWl
+                    v['db' + str(l)] = velocity of dbl
+    """
+    
+    L = len(parameters) // 3 # number of layers in the neural networks
+    v = {}
+    
+    # Initialize velocity
+    for l in range(L):
+        v["dW" + str(l+1)] = np.zeros(parameters["W" + str(l+1)].shape)
+        v["db" + str(l+1)] = np.zeros(parameters["b" + str(l+1)].shape)
+        
+    return v
 def linear_forward(A_prev, W, b):
     """
     Implement the linear part of a layer's forward propagation.
@@ -352,12 +377,48 @@ def update_parameters(parameters, grads, learning_rate):
     
     L = len(parameters) // 3 # number of layers in the neural network
 
-    # Update rule for each parameter. Use a for loop.
+    # Update rule for each parameter
     for l in range(L):
         parameters["W" + str(l+1)] = parameters["W" + str(l+1)] - learning_rate * grads["dW" + str(l+1)]
         parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate * grads["db" + str(l+1)]
+        parameters['g' + str(l+1)] = parameters['g' + str(l+1)] # keeps activations in memory
         
     return parameters
+def update_parameters_with_momentum(parameters, grads, v, beta, learning_rate):
+    """
+    Update parameters using Momentum
+    
+    Arguments:
+    parameters -- python dictionary containing your parameters:
+                    parameters['W' + str(l)] = Wl
+                    parameters['b' + str(l)] = bl
+    grads -- python dictionary containing your gradients for each parameters:
+                    grads['dW' + str(l)] = dWl
+                    grads['db' + str(l)] = dbl
+    v -- python dictionary containing the current velocity:
+                    v['dW' + str(l)] = ...
+                    v['db' + str(l)] = ...
+    beta -- the momentum hyperparameter, scalar
+    learning_rate -- the learning rate, scalar
+    
+    Returns:
+    parameters -- python dictionary containing your updated parameters 
+    v -- python dictionary containing your updated velocities
+    """
+
+    L = len(parameters) // 3 # number of layers in the neural networks
+    
+    # Momentum update for each parameter
+    for l in range(L):
+        # compute velocities
+        v["dW" + str(l+1)] = beta*v["dW" + str(l+1)] + (1-beta)*grads["dW" + str(l+1)]
+        v["db" + str(l+1)] = beta*v["db" + str(l+1)] + (1-beta)*grads["db" + str(l+1)]
+        # update parameters
+        parameters["W" + str(l+1)] = parameters["W" + str(l+1)] - learning_rate*v["dW" + str(l+1)]
+        parameters["b" + str(l+1)] = parameters["b" + str(l+1)] - learning_rate*v["db" + str(l+1)]
+        parameters['g' + str(l+1)] = parameters['g' + str(l+1)] # keeps activations in memory
+        
+    return parameters, v
 def L_layer_model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0.0075, num_iterations = 3000, print_cost = False):
     """
     Implements a L-layer neural network
@@ -414,7 +475,7 @@ def L_layer_model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0
 
 
     return parameters
-def model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0.0075, num_epochs = 10000, mini_batch_size = 64, print_cost = False):
+def model(X, Y, layers_dims, activations, optimizer, cost, lambd, beta = 0.9, learning_rate = 0.0075, num_epochs = 10000, mini_batch_size = 64, print_cost = False):
     """
     Implements a L-layer neural network with mini-batch gradient descent and different optimization modes
 
@@ -422,7 +483,10 @@ def model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0.0075, n
     X -- input matrix
     Y -- output vector
     layers_dims -- list containing the input size and each layer size, of length (number of layers + 1).
+    activations -- activation functions 
+    optimizer -- optimizer type
     learning_rate -- learning rate of the gradient descent update rule
+    beta -- Momentum hyperparameter
     num_epochs -- number of epochs
     mini_batch_size -- the size of a mini batch
     print_cost -- if True, it prints the cost every 100 steps
@@ -435,6 +499,12 @@ def model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0.0075, n
 
     # Parameters initialization
     parameters = initialize_parameters(layers_dims, activations)
+
+    # Optimizer initization
+    if optimizer == "gd":
+        pass # no initialization required for gradient descent
+    elif optimizer == "momentum":
+        v = initialize_velocity(parameters)
 
     # Loop (gradient descent)
     for i in range(num_epochs):
@@ -459,8 +529,11 @@ def model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0.0075, n
             # Backward propagation
             grads = L_model_backward(dAL, caches, lambd)
 
-            # Update parameters.
-            parameters = update_parameters(parameters, grads, learning_rate)
+            # Update parameters
+            if optimizer == "gd":
+                parameters = update_parameters(parameters, grads, learning_rate)
+            elif optimizer == "momentum":
+                parameters, v = update_parameters_with_momentum(parameters, grads, v, beta, learning_rate)
 
         # Print the cost every 1000 epochs
         if print_cost and i % 1000 == 0:
