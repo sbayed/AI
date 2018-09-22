@@ -414,6 +414,70 @@ def L_layer_model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0
 
 
     return parameters
+def model(X, Y, layers_dims, activations, cost, lambd, learning_rate = 0.0075, num_epochs = 10000, mini_batch_size = 64, print_cost = False):
+    """
+    Implements a L-layer neural network with mini-batch gradient descent and different optimization modes
+
+    Arguments:
+    X -- input matrix
+    Y -- output vector
+    layers_dims -- list containing the input size and each layer size, of length (number of layers + 1).
+    learning_rate -- learning rate of the gradient descent update rule
+    num_epochs -- number of epochs
+    mini_batch_size -- the size of a mini batch
+    print_cost -- if True, it prints the cost every 100 steps
+
+    Returns:
+    parameters -- parameters learnt by the model. They can then be used to predict.
+    """
+ 
+    Js = []
+
+    # Parameters initialization
+    parameters = initialize_parameters(layers_dims, activations)
+
+    # Loop (gradient descent)
+    for i in range(num_epochs):
+
+        # Define the random minibatches
+        minibatches = random_mini_batches(X, Y, mini_batch_size)
+
+        for minibatch in minibatches:
+
+            # Select a minibatch
+            (minibatch_X, minibatch_Y) = minibatch
+
+            # Forward propagation
+            AL, caches = L_model_forward(minibatch_X, parameters)
+
+            # Compute cost
+            J = compute_cost(AL, minibatch_Y, cost, parameters, lambd)
+
+            # Backward propagation initialization
+            dAL = initialize_backpropagation(AL, minibatch_Y, cost)
+
+            # Backward propagation
+            grads = L_model_backward(dAL, caches, lambd)
+
+            # Update parameters.
+            parameters = update_parameters(parameters, grads, learning_rate)
+
+        # Print the cost every 1000 epochs
+        if print_cost and i % 1000 == 0:
+            print("Cost after epoch %i: %f" % (i, J))
+        if print_cost and i % 100 == 0:
+            Js.append(J)
+
+    # plot the cost
+    plt.plot(Js)
+    plt.ylabel('cost')
+    plt.xlabel('epochs (per 100)')
+    plt.title("Learning rate =" + str(learning_rate))
+    plt.show()
+
+
+
+    return parameters
 def predict(X, y, parameters):
     """
     This function is used to predict the results of a  L-layer neural network.
@@ -444,9 +508,3 @@ def predict(X, y, parameters):
     print("Accuracy: "  + str(np.sum((p == y)/m)))
         
     return p
-
-
-
-
-
-

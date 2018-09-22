@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import h5py
 import numpy as np
 import scipy.io
+import math
+import sklearn
+import sklearn.datasets
 
 
 def load_data():
@@ -46,6 +49,13 @@ def load_2D_dataset():
 
 
     return train_X, train_Y, test_X, test_Y
+def load_dataset():
+    np.random.seed(3)
+    train_X, train_Y = sklearn.datasets.make_moons(n_samples=300, noise=.2) #300 #0.2 
+    train_X = train_X.T
+    train_Y = train_Y.reshape((1, train_Y.shape[0]))
+    
+    return train_X, train_Y
 def parameters_to_vector(parameters):
     """
     Roll all parameters dictionary into a single vector satisfying specific required shape for gradient checking.
@@ -179,3 +189,40 @@ def gradient_check(parameters, gradients, X, Y, cost, lambd, epsilon=1e-7):
             "\033[92m" + "Your backward propagation works perfectly fine! difference = " + str(difference) + "\033[0m")
 
     return difference
+def random_mini_batches(X, Y, mini_batch_size = 64):
+    """
+    Creates a list of random minibatches from (X, Y)
+    
+    Arguments:
+    X -- input matrix
+    Y -- output matrix
+    mini_batch_size -- size of the mini-batches, integer
+    
+    Returns:
+    mini_batches -- list of synchronous (mini_batch_X, mini_batch_Y)
+    """        
+    m = X.shape[1]                  
+    mini_batches = []
+        
+    # Step 1: Shuffle (X, Y)
+    permutation = list(np.random.permutation(m))
+    shuffled_X = X[:, permutation]
+    shuffled_Y = Y[:, permutation].reshape((1,m))
+
+    # Step 2: Partition (shuffled_X, shuffled_Y). Minus the end case.
+    num_complete_minibatches = math.floor(m/mini_batch_size) 
+    for k in range(0, num_complete_minibatches):
+        mini_batch_X = shuffled_X[:,k*mini_batch_size : (k+1)*mini_batch_size]
+        mini_batch_Y = shuffled_Y[:,k*mini_batch_size : (k+1)*mini_batch_size]
+        mini_batch = (mini_batch_X, mini_batch_Y)
+        mini_batches.append(mini_batch)
+    
+    # Handling the end case (last mini-batch < mini_batch_size)
+    if m % mini_batch_size != 0:
+        mini_batch_X = shuffled_X[:,(k+1)*mini_batch_size :]
+        mini_batch_Y = shuffled_Y[:,(k+1)*mini_batch_size :]
+        mini_batch = (mini_batch_X, mini_batch_Y)
+        mini_batches.append(mini_batch)
+    
+    return mini_batches
+
