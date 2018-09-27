@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utilities import *
 
-
 def initialize_parameters(layers_dims, activations):
     """
     Arguments:
@@ -674,3 +673,5 @@ def predict(X, y, parameters):
     print("Accuracy: "  + str(np.sum((p == y)/m)))
         
     return p
+
+
