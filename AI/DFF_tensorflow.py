@@ -39,17 +39,17 @@ def forward_propagation(X, parameters, activations):
         W = parameters['W' + str(l)]
         b = parameters['b' + str(l)]
         g = activations[l]
-        Z = tf.add(tf.matmul(W,A_prev),b)
+        Z = tf.add(tf.matmul(W,A_prev),b, name = 'linear' + str(l))
         if g == 'relu':
-            A = tf.nn.relu(Z)
+            A = tf.nn.relu(Z, name = 'relu' + str(l))
         elif g == 'sigmoid':
-            A = tf.nn.sigmoid(Z)
+            A = tf.nn.sigmoid(Z, name = 'sigmoid' + str(l))
         elif g == 'softmax':
-            A = tf.nn.softmax(Z)
+            A = tf.nn.softmax(Z, name = 'softmax' + str(l))
         A_prev = A
     AL = A
     return AL
-def dff_nn_classification(X_train, Y_train, layers_dims, activations, learning_rate, num_epochs, minibatch_size):
+def dff_nn_classification(X_train, Y_train, X_test, Y_test, layers_dims, activations, learning_rate, num_epochs, minibatch_size):
     """
     Implements a DFF tensorflow neural network for classification
     
@@ -111,5 +111,10 @@ def dff_nn_classification(X_train, Y_train, layers_dims, activations, learning_r
         # Calculate and print accuracy on the test set
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
         print ("Train Accuracy:", accuracy.eval({X: X_train, Y: Y_train}))
+        print ("Test Accuracy:", accuracy.eval({X: X_test, Y: Y_test}))
+
+        # Save tensorgraph
+        writer = tf.summary.FileWriter('./graphs', sess.graph)
+
 
     return parameters

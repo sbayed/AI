@@ -25,11 +25,11 @@ n_y = Y_train.shape[0]
 layers_dims = [n_x, 20, 7, 5, n_y]
 activations = ['none','relu','relu','relu','softmax']
 learning_rate = 0.00001
-num_epochs = 1000
+num_epochs = 1
 minibatch_size = 64
 
 # Test (Model level)
-parameters = dff_nn_classification(X_train, Y_train, layers_dims, activations, learning_rate, num_epochs, minibatch_size)
+parameters = dff_nn_classification(X_train, Y_train, X_test, Y_test, layers_dims, activations, learning_rate, num_epochs, minibatch_size)
 
 # Tests
 tf.reset_default_graph()
