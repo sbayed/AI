@@ -8,25 +8,24 @@ from utilities import *
 os.chdir("\\Users\sbayed\Desktop\sbayed_local\Machine Learning\AI\AI")
 
 # Data processing
-X_train_orig, Y_train, X_test_orig, Y_test, classes = load_data()
-X_train_flatten = X_train_orig.reshape(X_train_orig.shape[0], -1).T
-X_test_flatten = X_test_orig.reshape(X_test_orig.shape[0], -1).T
-C = len(np.unique(Y_train))
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+X_train = np.transpose(mnist.train.images[:40000,:])
+Y_train = np.transpose(mnist.train.labels[:40000,:])
+X_test = np.transpose(mnist.test.images[:10000,:])
+Y_test = np.transpose(mnist.test.labels[:10000,:])
 
-X_train = X_train_flatten/255.
-X_test = X_test_flatten/255.
 
-Y_train = convert_to_one_hot(Y_train, C)
-Y_test = convert_to_one_hot(Y_test, C)
 
 # Inputs
 n_x = X_train.shape[0]
 n_y = Y_train.shape[0]
-layers_dims = [n_x, 20, 7, 5, n_y]
-activations = ['none','relu','relu','relu','softmax']
-learning_rate = 0.00001
+m = Y_train.shape[1]
+layers_dims = [n_x, n_y]
+activations = ['none','softmax']
+learning_rate = 0.1
 num_epochs = 1
-minibatch_size = 64
+minibatch_size = m
 
 # Test (Model level)
 parameters = dff_nn_classification(X_train, Y_train, X_test, Y_test, layers_dims, activations, learning_rate, num_epochs, minibatch_size)
@@ -41,7 +40,9 @@ with tf.Session() as sess:
     Y = tf.placeholder(dtype = tf.float32, shape = (n_y, None), name = 'Y')
     AL = forward_propagation(X, parameters, activations)
     # Cost function
-    cost = tf.reduce_mean(-tf.reduce_sum(Y * tf.log(AL)))
+    j = [0.03, 0.03, 0.01, 0.9, 0.01, 0.01, 0.0025,0.0025, 0.0025, 0.0025]
+    k = [0,0,0,1,0,0,0,0,0,0]
+    cost = tf.reduce_mean(-tf.reduce_sum(Y * tf.log(AL),reduction_indices=[1]))
     cost = tf.losses.softmax_cross_entropy(Y,AL)
 
 
